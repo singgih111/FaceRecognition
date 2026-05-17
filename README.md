@@ -1,4 +1,4 @@
-# Face Recognition Workshop
+# Face Recognition
 
 A real-time face recognition system built with Python, PyTorch, and Flask. This project demonstrates how to implement face detection and recognition using deep learning models, with a web interface for real-time video processing and user management.
 
