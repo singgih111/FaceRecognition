@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2 class="mb-4">Live Face Recognition</h2>
+        
+        <div class="video-container">
+            <video id="videoElement" autoplay playsinline></video>
+            <canvas id="canvas"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const video = document.getElementById('videoElement');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+// Setup video stream
+async function setupCamera() {
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+        }
+    });
+    video.srcObject = stream;
+    
+    return new Promise(resolve => {
+        video.onloadedmetadata = () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            resolve();
+        };
+    });
+}
+
+// Convert frame to base64
+function getFrameAsBase64() {
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = video.videoWidth;
+    tempCanvas.height = video.videoHeight;
+    
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.drawImage(video, 0, 0);
+    
+    return tempCanvas.toDataURL('image/jpeg').split(',')[1];
+}
+
+// Draw face boxes and labels
+function drawDetections(faces) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    faces.forEach(face => {
+        const [x1, y1, x2, y2] = face.box;
+        const width = x2 - x1;
+        const height = y2 - y1;
+        
+        // Draw box
+        ctx.strokeStyle = face.recognized ? '#0d6efd' : '#198754';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x1, y1, width, height);
+        
+        // Draw name label
+        if (face.name) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(x1, y1 - 25, ctx.measureText(face.name).width + 10, 20);
+            
+            ctx.fillStyle = '#fff';
+            ctx.font = '14px Arial';
+            ctx.fillText(face.name, x1 + 5, y1 - 10);
+        }
+    });
+}
+
+// Process video frame
+async function processFrame() {
+    try {
+        const imageData = getFrameAsBase64();
+        
+        const response = await fetch('/api/recognize', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ image: imageData })
+        });
+        
+        const result = await response.json();
+        if (result.faces) {
+            drawDetections(result.faces);
+        }
+    } catch (error) {
+        console.error('Error processing frame:', error);
+    }
+    
+    requestAnimationFrame(processFrame);
+}
+
+// Initialize
+(async function init() {
+    try {
+        await setupCamera();
+        processFrame();
+    } catch (error) {
+        console.error('Error initializing camera:', error);
+        alert('Error accessing camera. Please make sure you have granted camera permissions.');
+    }
+})();
+</script>
+{% endblock %} 
