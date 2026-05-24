@@ -30,11 +30,7 @@ A real-time face recognition system built with Python, PyTorch, and Flask. This 
 
 ## Installation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/ekkirinaldi/workshop-face-recognition.git
-   cd workshop-face-recognition
-   ```
+1. Clone the repo
 
 2. Create a virtual environment and install dependencies:
    ```bash
